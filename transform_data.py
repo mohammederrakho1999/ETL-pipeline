@@ -1,5 +1,7 @@
 from pyspark.sql.types import StringType
 from pyspark.sql import functions as fn
+from pyspark.sql.functions import col
+from pyspark.sql.types import IntegerType
 import configparser
 import logging
 
@@ -17,7 +19,22 @@ class OlistTransform:
 		self._load_path = "s3a" + config.get("BUCKET","WORKING_ZONE")
 		self._save_path = "s3a" + config.get("BUCKET","PROCESSED_ZONE")
 
-	def transform_data(self):
+	def transform_book_data(self):
+		books = self._spark.read.format("csv").option("header","true") \
+		                                      .option("sep",";") \
+		                                      .option("inferShema","true") \
+		                                      .load("BX-Books.csv")
+
+		books = books.where(col("Year-Of-publication") != 0) \
+		             .withColumn("Year-Of-publication", books["Year-Of-publication"].cast(IntegerType()))
+
+        books = books.filter(col("Year-Of-publication") < 2006)
+        books = books.withColumn("Publisher", fn.regexp_replace("Publisher","N/A","other"))
+
+        books.repartition(2).write \
+                        .csv(path = self._save_path + "/books/", mode = "overwrite", compression = "gzip", header = True)
+                        
+    def transform_data(self):
 		df_customers = self._spark.read.format("csv") \
 		                               .option("header","true") \
 		                               .option("inferShema","true") \
