@@ -45,7 +45,7 @@ class OlistTransform:
 	
 	Users = Users.withColumn("Age", Users["Age"].cast(IntegerType()))
 	Users = Users.withColumn("Age", fn.when(((Users.Age > 90) | (Users.Age < 5)) , fn.lit("null")).otherwise(Users.Age))
-	split_col = fn.split(Users["Location"], ",")
+	Split_col = fn.split(Users["Location"], ",")
 	Users = Users.withColumn("City", split_col.getItem(0))
         Users = Users.withColumn("State", split_col.getItem(1))
         Users = Users.withColumn("country", split_col.getItem(2))
