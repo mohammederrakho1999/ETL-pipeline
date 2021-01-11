@@ -19,6 +19,7 @@ class OlistTransform:
 	self._save_path = "s3a" + config.get("BUCKET","PROCESSED_ZONE")
 
     def transform_book_data(self):
+	logging.debug("inside transform books data")
 	books = self._spark.read.format("csv").option("header","true") \
 		                                  .option("sep",";") \
 		                                  .option("inferShema","true") \
@@ -29,30 +30,28 @@ class OlistTransform:
 
         books = books.filter(col("Year-Of-publication") < 2006)
         books = books.withColumn("Publisher", fn.regexp_replace("Publisher","N/A","other"))
-
+        
+	logging.debug("writing books data")
         books.repartition(2).write \
                                 .csv(path = self._save_path + "/books/", mode = "overwrite", compression = "gzip", header = True)
                         
-    def transform_data(self):
-	df_customers = self._spark.read.format("csv") \
+    def transform_user_data(self):
+	logging.debug("inside transform user data")
+	Users = self._spark.read.format("csv") \
 		                               .option("header","true") \
+	                                       .option("sep",";") \
 		                               .option("inferShema","true") \
-		                               .load(self._load_path + "/olist_customers_dataset.csv/")
+		                               .load(self._load_path + "/Users.csv/")
+	
+	Users = Users.withColumn("Age", Users["Age"].cast(IntegerType()))
+	Users = Users.withColumn("Age", fn.when(((Users.Age > 90) | (Users.Age < 5)) , fn.lit("null")).otherwise(Users.Age))
+	split_col = fn.split(Users["Location"], ",")
+	Users = Users.withColumn("City", split_col.getItem(0))
+        Users = Users.withColumn("State", split_col.getItem(1))
+        Users = Users.withColumn("country", split_col.getItem(2))
+	
 
-        df_order = self._spark.read.format("csv") \
-		                           .option("header","true") \
-		                           .option("inferShema","true") \
-		                           .load(self._load_path + "/olist_orders_dataset.csv/")
-
-	df_product = self._spark.read.format("csv") \
-		                             .option("header","true") \
-		                             .option("inferShema","true") \
-		                             .load(self._load_path + "/olist_products_dataset.csv/")
-
-	df_order_items = self._spark.read.format("csv") \
-		                             .option("header","true") \
-		                             .option("inferShema","true") \
-		                             .load(self._load_path + "/olist_order_items_dataset.csv/")
+       
 
 	logging.debug("begin transformation")
 
