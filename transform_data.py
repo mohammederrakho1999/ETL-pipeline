@@ -49,6 +49,12 @@ class OlistTransform:
 	Users = Users.withColumn("City", split_col.getItem(0))
         Users = Users.withColumn("State", split_col.getItem(1))
         Users = Users.withColumn("country", split_col.getItem(2))
+	Users = Users.drop("Location")
+	
+	logging.debug("writing User data")
+	Users.repartition(2).write \
+                                .csv(path = self._save_path + "/Users/", mode = "overwrite", compression = "gzip", header = True)
+
 	
 
        
