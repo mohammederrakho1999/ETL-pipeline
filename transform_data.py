@@ -10,8 +10,7 @@ config = configparser.ConfigParser()
 config.read_file(open(f"{Path(__file__).parents[0]}/config.cfg"))
 
 class OlistTransform:
-	"""This class performs transformations operations on the diffrent datasets
-	"""
+	"""This class performs transformations operations on the diffrent datasets"""
 
     def __init__(self, spark):
 	self._spark = spark
@@ -23,7 +22,7 @@ class OlistTransform:
 	books = self._spark.read.format("csv").option("header","true") \
 		                                  .option("sep",";") \
 		                                  .option("inferShema","true") \
-		                                  .load("BX-Books.csv")
+		                                  .load(self._load_path + "/BX-Books.csv/")
 
 	books = books.where(col("Year-Of-publication") != 0) \
 		         .withColumn("Year-Of-publication", books["Year-Of-publication"].cast(IntegerType()))
@@ -43,6 +42,7 @@ class OlistTransform:
 		                               .option("inferShema","true") \
 		                               .load(self._load_path + "/Users.csv/")
 	
+	
 	Users = Users.withColumn("Age", Users["Age"].cast(IntegerType()))
 	Users = Users.withColumn("Age", fn.when(((Users.Age > 90) | (Users.Age < 5)) , fn.lit("null")).otherwise(Users.Age))
 	Split_col = fn.split(Users["Location"], ",")
@@ -55,11 +55,28 @@ class OlistTransform:
 	Users.repartition(2).write \
                                 .csv(path = self._save_path + "/Users/", mode = "overwrite", compression = "gzip", header = True)
 
+    def transform_book_ratings_data(self):
+	logging.debug("inside trasform book ratings data")
+	book_ratings = self._spark.read.format("csv") \ 
+	                    .option("header","true") \
+	                    .option("sep",";")\ 
+	                    .option("inferShema","true") \
+	                    .load(self._load_path, + ".csv")
+	
+	books = self._spark.read.format("csv") \ 
+	                    .option("header","true") \
+	                    .option("sep",";")\ 
+	                    .option("inferShema","true") \
+	                    .load(self._load_path, + "/books/.csv")
+	
+	
+	book_ratings  = book_ratings.where(book_ratings['ISBN'].isin(books.select('ISBN').distinct().rdd.flatMap(lambda x:x).collect()[0]))
+	book_ratings = book_ratings.select(["ISBN","User-ID","Book-Rating"])
+	logging.debug("writing the data")
+	book_ratings.repartition(2).write \
+                                   .csv(path = self._save_path + "/book_ratings/", mode = "overwrite", compression = "gzip", header = True)
 	
 
-       
-
-	logging.debug("begin transformation")
 
 	df_customer_data = df_customers.filter(df_customers.customer_id != "NaN") \
 		                               .select(["customer_id","customer_id","customer_state"])
@@ -67,6 +84,7 @@ class OlistTransform:
 	df_order_data = df_order.join(df_order_items, on = ["order_id"], how = "inner") \
 		                        .filter(df_order.customer_id !="NaN") \
 		                        .select(["customer_id","order_id","order_status","order_delivered_customer_date","product_id"])
+	
 
         df_order_data.persist()
         fn.broadcast(df_order_data)
