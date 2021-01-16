@@ -31,9 +31,7 @@ class Transform_data:
         books = books.withColumn("Publisher", fn.regexp_replace("Publisher","N/A","other"))
         
 	logging.debug("writing books data")
-        books.write \
-             .csv(path = self._save_path + "/books/", mode = "overwrite", compression = "gzip", header = True)
-	
+        books.to_pandas.to_csv(path = self._save_path + "/books/", mode = "overwrite" ,compression = "gzip", header = True)
                         
     def transform_user_data(self):
 	logging.debug("inside transform user data")
