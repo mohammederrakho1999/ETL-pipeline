@@ -51,8 +51,7 @@ class Transform_data:
 	Users = Users.drop("Location")
 	
 	logging.debug("writing User data")
-	Users.repartition(2).write \
-                                .csv(path = self._save_path + "/Users/", mode = "overwrite", compression = "gzip", header = True)
+	Usersbooks.to_pandas.to_csv(path = self._save_path + "/Usersbooks/", mode = "overwrite" ,compression = "gzip", header = True)
 
     def transform_book_ratings_data(self):
 	logging.debug("inside trasform book ratings data")
