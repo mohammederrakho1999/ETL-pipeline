@@ -72,6 +72,5 @@ class Transform_data:
 	book_ratings  = book_ratings.where(book_ratings['ISBN'].isin(books.select('ISBN').distinct().rdd.flatMap(lambda x:x).collect()[0]))
 	book_ratings = book_ratings.select(["ISBN","User-ID","Book-Rating"])
 	logging.debug("writing the data")
-	book_ratings.repartition(2).write \
-                                   .csv(path = self._save_path + "/book_ratings/", mode = "overwrite", compression = "gzip", header = True)
+	book_ratings.to_pandas.to_csv(path = self._save_path + "/book_ratings/", mode = "overwrite" , compression = "gzip", header = True)
 	
