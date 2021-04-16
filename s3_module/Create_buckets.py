@@ -22,11 +22,3 @@ s3_resource.create_bucket(Bucket = bucket_name2,
 s3_resource.create_bucket(Bucket = bucket_name3,
                           CreateBucketConfiguration = {
                               'LocationConstraint': 'eu-west-1'})
-
-
-
-
-
-
-
-
