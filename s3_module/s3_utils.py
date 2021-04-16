@@ -46,10 +46,3 @@ class S3Module():
 			objects.append(my_bucket_object.key)
 		print(objects)
 		return objects
-	
-
-
-s3 = S3Module()
-s3.get_files(config.get("BUCKET","LANDING_ZONE1999"))
-s3.MoveData(config.get("BUCKET","LANDING_ZONE1999"), config.get("BUCKET","WORKING_ZONE1999"))
-
