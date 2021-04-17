@@ -46,3 +46,7 @@ class S3Module():
 			objects.append(my_bucket_object.key)
 		print(objects)
 		return objects
+	
+	def clean_bucket(self, bucket_name):
+		logging.debug(f"Cleaning bucket : {bucket_name}")
+		self.S3.Bucket(bucket_name).objects.all().delete()
