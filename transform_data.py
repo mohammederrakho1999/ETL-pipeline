@@ -7,22 +7,22 @@ import logging
 
 
 config = configparser.ConfigParser()
-config.read_file(open(f"{Path(__file__).parents[0]}/config.cfg"))
+config.read_file(open("config.cfg"))
 
 class Transform_data:
 	"""This class performs transformations operations on the diffrent datasets"""
 
     def __init__(self, spark):
 	self._spark = spark
-	self._load_path = "s3a" + config.get("BUCKET","WORKING_ZONE")
-	self._save_path = "s3a" + config.get("BUCKET","PROCESSED_ZONE")
+	self._load_path = "s3a" + config.get("BUCKET","LANDING_ZONE1999")
+	self._save_path = "s3a" + config.get("BUCKET","PROCESSED_ZONE1999")
 
     def transform_book_data(self):
 	logging.debug("inside transform books data")
 	books = self._spark.read.format("csv").option("header","true") \
 		                                  .option("sep",";") \
 		                                  .option("inferShema","true") \
-		                                  .load(self._load_path + "/BX-Books.csv/")
+		                                  .load(self._load_path + "/Books.csv/")
 
 	books = books.where(col("Year-Of-publication") != 0) \
 		         .withColumn("Year-Of-publication", books["Year-Of-publication"].cast(IntegerType()))
@@ -32,6 +32,47 @@ class Transform_data:
         
 	logging.debug("writing books data")
         books.to_pandas.to_csv(path = self._save_path + "/books/", mode = "overwrite" ,compression = "gzip", header = True)
+                        
+    def transform_user_data(self):
+	logging.debug("inside transform user data")
+	Users = self._spark.read.format("csv") \
+		                               .option("header","true") \
+	                                       .option("sep",";") \
+		                               .option("inferShema","true") \
+		                               .load(self._load_path + "/Users.csv/")
+	
+	
+	Users = Users.withColumn("Age", Users["Age"].cast(IntegerType()))
+	Users = Users.withColumn("Age", fn.when(((Users.Age > 90) | (Users.Age < 5)) , fn.lit("null")).otherwise(Users.Age))
+	Split_col = fn.split(Users["Location"], ",")
+	Users = Users.withColumn("City", split_col.getItem(0))
+        Users = Users.withColumn("State", split_col.getItem(1))
+        Users = Users.withColumn("country", split_col.getItem(2))
+	Users = Users.drop("Location")
+	
+	logging.debug("writing User data")
+	Usersbooks.to_pandas.to_csv(path = self._save_path + "/Usersbooks/", mode = "overwrite" ,compression = "gzip", header = True)
+
+    def transform_book_ratings_data(self):
+	logging.debug("inside trasform book ratings data")
+	
+	book_ratings = self._spark.read.format("csv") \
+	                    .option("header","true") \
+	                    .option("sep",";") \
+	                    .option("inferShema","true") \
+	                    .load(self._load_path, + "Book-Ratings.csv")
+	
+	books = self._spark.read.format("csv") \
+	                    .option("header","true") \
+	                    .option("sep",";") \
+	                    .option("inferShema","true") \
+	                    .load(self._save_path, + "/books.csv/")
+	
+	
+	book_ratings  = book_ratings.where(book_ratings['ISBN'].isin(books.select('ISBN').distinct().rdd.flatMap(lambda x:x).collect()[0]))
+	book_ratings = book_ratings.select(["ISBN","User-ID","Book-Rating"])
+	logging.debug("writing the data")
+	book_ratings.to_pandas.to_csv(path = self._save_path + "/book_ratings/", mode = "overwrite" , compression = "gzip", header = True)
                         
     def transform_user_data(self):
 	logging.debug("inside transform user data")
