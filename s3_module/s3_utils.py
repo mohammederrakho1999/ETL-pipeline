@@ -22,8 +22,6 @@ class S3Module():
 
 
 	def MoveData(self, source_bucket, target_bucket):
-
-
 		if source_bucket == None:
 			source_bucket = self.LandingZone
 		if target_bucket == None:
@@ -31,7 +29,7 @@ class S3Module():
 
 		print(f"move data from {source_bucket} to {target_bucket}")
 
-		#self.clean_bucket()
+		self.clean_bucket(target_bucket)
 
 		for key in self.get_files(source_bucket):
 			if key in config.get("FILES","NAME").split(",") and key not in self.get_files(target_bucket):
@@ -44,7 +42,7 @@ class S3Module():
 		objects = []
 		for my_bucket_object in self.S3.Bucket(bucket_name).objects.all():
 			objects.append(my_bucket_object.key)
-		print(objects)
+		#print(objects)
 		return objects
 	
 	def clean_bucket(self, bucket_name):
