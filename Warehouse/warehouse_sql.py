@@ -54,3 +54,6 @@ CREATE TABLE IF NOT EXISTS {}.users
 DISTSTYLE ALL
 ;
 """.format(warehouse_schema)
+
+drop_warehouse_tables = [drop_books_table, drop_ratings_table, drop_users_table]
+create_warehouse_tables = [create_books_table, create_ratings_table, create_users_table]
