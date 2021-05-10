@@ -96,3 +96,6 @@ IGNOREHEADER 1
 ;
 """.format(staging_area_schema, s3_processed_zone, iam_role)
 
+drop_staging_tables = [drop_books_table, drop_ratings_table, drop_users_table]
+create_staging_tables = [create_books_table, create_ratings_table, create_users_table]
+copy_staging_tables = [copy_books_table, copy_ratings_table, copy_users_table]
